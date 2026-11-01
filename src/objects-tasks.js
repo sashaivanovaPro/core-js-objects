@@ -376,33 +376,100 @@ function group(array, keySelector, valueSelector) {
  *  For more examples see unit tests.
  */
 
+class CssSelector {
+  #text;
+
+  #lastOrder;
+
+  #usedParts;
+
+  constructor(text = '', lastOrder = 0, usedParts = []) {
+    this.#text = text;
+    this.#lastOrder = lastOrder;
+    this.#usedParts = new Set(usedParts);
+  }
+
+  static combine(selector1, combinator, selector2) {
+    return new CssSelector(
+      `${selector1.stringify()} ${combinator} ${selector2.stringify()}`,
+      selector2.#lastOrder,
+      selector2.#usedParts
+    );
+  }
+
+  #append(order, fragment) {
+    if ([1, 2, 6].includes(order) && this.#usedParts.has(order)) {
+      throw new Error(
+        'Element, id and pseudo-element should not occur more than one time inside the selector'
+      );
+    }
+    if (order < this.#lastOrder) {
+      throw new Error(
+        'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element'
+      );
+    }
+    return new CssSelector(this.#text + fragment, order, [
+      ...this.#usedParts,
+      order,
+    ]);
+  }
+
+  element(value) {
+    return this.#append(1, value);
+  }
+
+  id(value) {
+    return this.#append(2, `#${value}`);
+  }
+
+  class(value) {
+    return this.#append(3, `.${value}`);
+  }
+
+  attr(value) {
+    return this.#append(4, `[${value}]`);
+  }
+
+  pseudoClass(value) {
+    return this.#append(5, `:${value}`);
+  }
+
+  pseudoElement(value) {
+    return this.#append(6, `::${value}`);
+  }
+
+  stringify() {
+    return this.#text;
+  }
+}
+
 const cssSelectorBuilder = {
-  element(/* value */) {
-    throw new Error('Not implemented');
+  element(value) {
+    return new CssSelector().element(value);
   },
 
-  id(/* value */) {
-    throw new Error('Not implemented');
+  id(value) {
+    return new CssSelector().id(value);
   },
 
-  class(/* value */) {
-    throw new Error('Not implemented');
+  class(value) {
+    return new CssSelector().class(value);
   },
 
-  attr(/* value */) {
-    throw new Error('Not implemented');
+  attr(value) {
+    return new CssSelector().attr(value);
   },
 
-  pseudoClass(/* value */) {
-    throw new Error('Not implemented');
+  pseudoClass(value) {
+    return new CssSelector().pseudoClass(value);
   },
 
-  pseudoElement(/* value */) {
-    throw new Error('Not implemented');
+  pseudoElement(value) {
+    return new CssSelector().pseudoElement(value);
   },
 
-  combine(/* selector1, combinator, selector2 */) {
-    throw new Error('Not implemented');
+  combine(selector1, combinator, selector2) {
+    return CssSelector.combine(selector1, combinator, selector2);
   },
 };
 
